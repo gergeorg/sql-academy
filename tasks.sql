@@ -226,3 +226,87 @@ WHERE t.plane = 'TU-134' AND t.town_to = 'Moscow'
 -- Задание 30
 -- Выведите нагруженность (число пассажиров) каждого рейса (trip). Результат вывести в отсортированном виде по убыванию нагруженности.
 
+SELECT trip, COUNT(*) AS count FROM Pass_in_trip
+GROUP BY trip
+ORDER BY count DESC;
+
+-- Задание 31
+-- Вывести всех членов семьи с фамилией Quincey.
+
+SELECT * from FamilyMembers
+WHERE member_name LIKE '% Quincey'
+
+-- Задание 32
+-- Вывести средний возраст людей (в годах), хранящихся в базе данных. Результат округлите до целого в меньшую сторону.
+
+SELECT FLOOR(AVG(TIMESTAMPDIFF(YEAR, birthday, CURDATE()))) AS age
+FROM FamilyMembers;
+
+-- Задание 33
+-- Найдите среднюю цену икры на основе данных, хранящихся в таблице Payments. В базе данных хранятся данные о покупках красной (red caviar) и черной икры (black caviar). В ответе должна быть одна строка со средней ценой всей купленной когда-либо икры.
+
+SELECT AVG(unit_price) AS cost
+FROM Payments
+WHERE good IN (5, 7);
+
+-- Задание 34
+-- Сколько всего 10-ых классов
+
+SELECT COUNT(*) AS count FROM Class
+WHERE name LIKE '10%';
+
+-- Задание 35
+-- Сколько различных кабинетов школы использовались 2 сентября 2019 года для проведения занятий?
+
+SELECT COUNT(DISTINCT classroom) AS count
+FROM Schedule
+WHERE date = '2019-09-02';
+
+-- Задание 36
+-- Выведите информацию об обучающихся живущих на улице Пушкина (ul. Pushkina)?
+
+SELECT * FROM Student
+WHERE address LIKE 'ul. Pushkina%'
+
+-- Задание 37
+-- Сколько лет самому молодому обучающемуся ?
+SELECT TIMESTAMPDIFF(YEAR, MAX(birthday), CURDATE()) AS year
+FROM Student;
+
+-- Задание 38
+-- Сколько Анн (Anna) учится в школе ?
+
+SELECT COUNT(*) AS count FROM Student
+WHERE first_name = 'Anna'
+
+-- Задание 39
+-- Сколько обучающихся в 10 B классе ?
+
+SELECT COUNT(*) AS count 
+FROM Student_in_class sc
+JOIN Class c ON sc.class = c.id
+WHERE c.name = '10 B'
+
+-- Задание 40
+-- Выведите название предметов, которые преподает Ромашкин П.П. (Romashkin P.P.). Обратите внимание, что в базе данных есть несколько учителей с такой фамилией.
+
+SELECT s.name as subjects FROM Subject s
+JOIN Schedule sc on s.id = sc.subject
+WHERE sc.teacher = 1
+
+-- Задание 41
+-- Выясните, во сколько по расписанию начинается четвёртое занятие.
+
+SELECT start_pair FROM Timepair 
+WHERE id = 4
+
+-- Задание 42
+-- Сколько времени обучающийся будет находиться в школе, учась со 2-го по 4-ый уч. предмет?
+
+SELECT 
+	TIMEDIFF(
+		(SELECT end_pair FROM Timepair WHERE id = 4),
+		(SELECT start_pair FROM Timepair WHERE id = 2)
+	) AS time;
+
+
