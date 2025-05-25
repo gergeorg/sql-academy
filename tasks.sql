@@ -309,4 +309,153 @@ SELECT
 		(SELECT start_pair FROM Timepair WHERE id = 2)
 	) AS time;
 
+-- Задание 43
+-- Выведите фамилии преподавателей, которые ведут физическую культуру (Physical Culture). Отсортируйте преподавателей по фамилии в алфавитном порядке.
 
+SELECT t.last_name
+FROM Teacher t
+	JOIN Schedule s ON t.id = s.teacher
+	JOIN Subject sub ON s.subject = sub.id
+WHERE sub.name = 'Physical Culture'
+GROUP BY t.last_name
+ORDER BY t.last_name ASC;
+
+-- Задание 44
+-- Найдите максимальный возраст (количество лет) среди обучающихся 10 классов на сегодняшний день. Для получения текущих даты и времени используйте функцию NOW().
+
+SELECT TIMESTAMPDIFF(YEAR, s.birthday, NOW()) AS max_year 
+FROM Student s 
+	JOIN Student_in_class sc ON s.id = sc.student
+	JOIN Class c ON sc.class = c.id
+WHERE c.name LIKE '10%'
+ORDER BY max_year  DESC
+LIMIT 1;
+
+-- Задание 45
+-- Какие кабинеты чаще всего использовались для проведения занятий? Выведите те, которые использовались максимальное количество раз.
+
+SELECT classroom
+FROM (
+	SELECT classroom, COUNT(*) AS cnt FROM Schedule
+	GROUP BY classroom
+	) AS usage_count
+WHERE cnt = (
+	SELECT MAX(cnt) FROM (
+		SELECT COUNT(*) AS cnt FROM Schedule
+		GROUP BY classroom
+	) AS max_usage);
+
+-- Задание 46
+-- В каких классах введет занятия преподаватель "Krauze" ?
+
+SELECT DISTINCT c.name from Class c 
+JOIN Schedule s on c.id = s.class
+JOIN Teacher t ON s.teacher = t.id
+WHERE t.last_name = 'Krauze'
+
+-- Задание 47
+-- Сколько занятий провел Krauze 30 августа 2019 г.?
+SELECT COUNT(*) AS COUNT
+FROM Schedule s
+	JOIN Teacher t ON s.teacher = t.id
+WHERE t.last_name = 'Krauze' AND s.date = '2019-08-30';
+
+-- Задание 48
+-- Выведите заполненность классов в порядке убывания
+
+SELECT DISTINCT c.name,
+	COUNT(*) AS COUNT
+FROM Class c
+	JOIN Student_in_class s ON c.id = s.class
+GROUP BY c.name
+ORDER BY COUNT DESC;
+
+-- Задание 49
+-- Какой процент обучающихся учится в "10 A" классе? Выведите ответ в диапазоне от 0 до 100 с округлением до четырёх знаков после запятой, например, 96.0201.
+
+SELECT ROUND(
+	100.0 * (
+		SELECT COUNT(*) FROM Student_in_class
+		WHERE class = 7) / 
+		(SELECT COUNT(*) FROM Student_in_class), 4) AS percent
+
+-- Задание 50
+-- Какой процент обучающихся родился в 2000 году? Результат округлить до целого в меньшую сторону.
+
+SELECT TRUNCATE(
+	100.0 * (
+		SELECT COUNT(*) FROM Student
+		WHERE YEAR(birthday) = 2000) / 
+		(SELECT COUNT(*) FROM Student), 0) AS percent
+
+-- Задание 51
+-- Добавьте товар с именем "Cheese" и типом "food" в список товаров (Goods).
+
+INSERT INTO Goods (good_id, good_name, type)
+VALUES (19, 'Cheese', 2);
+
+-- Задание 52
+-- Добавьте в список типов товаров (GoodTypes) новый тип "auto".
+
+INSERT INTO GoodTypes (good_type_id, good_type_name)
+VALUES (9, 'auto');
+
+-- Задание 53
+-- Измените имя "Andie Quincey" на новое "Andie Anthony".
+
+UPDATE FamilyMembers
+SET member_name = 'Andie Anthony'
+WHERE member_name = 'Andie Quincey';
+
+
+-- Задание 54
+-- Удалить всех членов семьи с фамилией "Quincey".
+
+DELETE FROM FamilyMembers
+WHERE member_name LIKE '% Quincey';
+
+-- Задание 55
+-- Удалить компании, совершившие наименьшее количество рейсов.
+
+DELETE c
+FROM company c
+JOIN (
+	SELECT company FROM Trip
+	GROUP BY company
+	HAVING COUNT(*) = ( SELECT MIN(cnt)
+		FROM (
+			SELECT COUNT(*) AS cnt FROM Trip
+			GROUP BY company
+		) AS x)
+) AS t ON c.id = t.company;
+
+-- Задание 56
+-- Удалить все перелеты, совершенные из Москвы (Moscow).
+
+DELETE FROM Trip
+WHERE town_from = 'Moscow'
+
+
+-- Задание 57
+-- Перенести расписание всех занятий на 30 мин. вперед.
+
+UPDATE Timepair
+SET start_pair = DATE_ADD(start_pair, INTERVAL 30 MINUTE),
+	end_pair = DATE_ADD(end_pair, INTERVAL 30 MINUTE);
+
+-- Задание 59
+-- Вывести пользователей,указавших Белорусский номер телефона ? Телефонный код Белоруссии +375.
+
+SELECT * FROM Users
+WHERE phone_number LIKE '+375%'
+
+-- Задание 60
+-- Выведите идентификаторы преподавателей, которые хотя бы один раз за всё время преподавали в каждом из одиннадцатых классов.
+
+SELECT teacher FROM Schedule s
+JOIN Class c ON s.class = c.id
+WHERE c.name LIKE '11%'
+GROUP BY teacher
+HAVING COUNT(DISTINCT c.id) = (
+    SELECT COUNT(*) FROM Class WHERE name LIKE '11%'
+);
