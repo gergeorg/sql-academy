@@ -457,5 +457,78 @@ JOIN Class c ON s.class = c.id
 WHERE c.name LIKE '11%'
 GROUP BY teacher
 HAVING COUNT(DISTINCT c.id) = (
-    SELECT COUNT(*) FROM Class WHERE name LIKE '11%'
+	SELECT COUNT(*) FROM Class WHERE name LIKE '11%'
 );
+
+-- Задание 61
+-- Выведите список комнат, которые были зарезервированы хотя бы на одни сутки в 12-ую неделю 2020 года. В данной задаче в качестве одной недели примите период из семи дней, первый из которых начинается 1 января 2020 года. Например, первая неделя года — 1–7 января, а третья — 15–21 января.
+
+SELECT DISTINCT r.* FROM Rooms r
+JOIN Reservations res ON r.id = res.room_id
+WHERE DATE(res.start_date) <= '2020-03-23'
+  AND DATE(res.end_date) >= '2020-03-17';
+
+-- Задание 62
+-- Вывести в порядке убывания популярности доменные имена 2-го уровня, используемые пользователями для электронной почты. Полученный результат необходимо дополнительно отсортировать по возрастанию названий доменных имён.
+
+SELECT 
+	SUBSTRING_INDEX(email, '@', -1) AS domain,
+	COUNT(*) AS count
+FROM Users
+GROUP BY domain
+ORDER BY count DESC, domain ASC;
+
+-- Задание 63
+-- Выведите отсортированный список (по возрастанию) фамилий и имен студентов в виде Фамилия.И.
+
+SELECT CONCAT(last_name, '.', LEFT(first_name, 1), '.') AS name
+FROM Student
+ORDER BY last_name ASC, first_name ASC;
+
+-- Задание 64
+-- Вывести количество бронирований по каждому месяцу каждого года, в которых было хотя бы 1 бронирование. Результат отсортируйте в порядке возрастания даты бронирования.
+
+SELECT 
+	YEAR(start_date) AS year,
+	MONTH(start_date) AS month,
+	COUNT(*) AS amount
+FROM Reservations
+GROUP BY year, month
+ORDER BY year ASC, month ASC;
+
+-- Задание 65
+-- Необходимо вывести рейтинг для комнат, которые хоть раз арендовали, как среднее значение рейтинга отзывов округленное до целого вниз.
+
+SELECT res.room_id,
+	FLOOR(AVG(rating)) AS rating
+FROM Reservations res
+	JOIN Reviews r ON res.id = r.reservation_id
+GROUP BY room_id
+ORDER BY room_id;
+
+-- Задание 66
+-- Вывести список комнат со всеми удобствами (наличие ТВ, интернета, кухни и кондиционера), а также общее количество дней и сумму за все дни аренды каждой из таких комнат.
+
+SELECT
+	r.home_type,
+	r.address,
+	COALESCE(SUM(DATEDIFF(res.end_date, res.start_date)), 0) AS days,
+	COALESCE(SUM(res.total), 0) AS total_fee
+FROM Rooms r
+LEFT JOIN Reservations res ON r.id = res.room_id
+WHERE r.has_tv = 1
+  AND r.has_internet = 1
+  AND r.has_kitchen = 1
+  AND r.has_air_con = 1
+GROUP BY r.home_type, r.address
+
+-- Задание 67
+-- Вывести время отлета и время прилета для каждого перелета в формате "ЧЧ:ММ, ДД.ММ - ЧЧ:ММ, ДД.ММ", где часы и минуты с ведущим нулем, а день и месяц без.
+
+SELECT CONCAT(
+	DATE_FORMAT(time_out, "%H:%i, %e.%c"),
+	" - ",
+	DATE_FORMAT(time_in, "%H:%i, %e.%c")
+) AS flight_time
+FROM Trip
+
