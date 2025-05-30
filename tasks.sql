@@ -532,3 +532,63 @@ SELECT CONCAT(
 ) AS flight_time
 FROM Trip
 
+-- Задание 68
+-- Для каждой комнаты, которую снимали как минимум 1 раз, найдите имя человека, снимавшего ее последний раз, и дату, когда он выехал
+
+SELECT res.room_id, u.name, res.end_date from Rooms r
+JOIN Reservations res ON r.id = res.room_id
+JOIN Users u ON res.user_id = u.id
+WHERE end_date = (
+	SELECT MAX(end_date) FROM Reservations res2
+	WHERE res2.room_id = res.room_id
+)
+
+
+-- Задание 69
+-- Вывести идентификаторы всех владельцев комнат, что размещены на сервисе бронирования жилья и сумму, которую они заработали
+
+SELECT r.owner_id, COALESCE(SUM(res.total), 0) as total_earn FROM Rooms r
+LEFT JOIN Reservations res on r.id = res.room_id
+GROUP BY r.owner_id
+
+-- Задание 70
+-- Необходимо категоризовать жилье на economy, comfort, premium по цене соответственно <= 100, 100 < цена < 200, >= 200. В качестве результата вывести таблицу с названием категории и количеством жилья, попадающего в данную категорию
+
+SELECT CASE
+		WHEN price <= 100 THEN "economy"
+		WHEN price > 100
+		AND price < 200 THEN "comfort"
+		WHEN price >= 200 THEN "premium"
+	END AS category,
+	COUNT(1) AS COUNT
+FROM Rooms
+GROUP BY category
+
+-- Задание 71
+-- Найдите какой процент пользователей, зарегистрированных на сервисе бронирования, хоть раз арендовали или сдавали в аренду жилье. Результат округлите до сотых.
+
+SELECT ROUND((
+		SELECT COUNT(DISTINCT u.id)
+		FROM Users u,
+			Rooms r,
+			Reservations res
+		WHERE u.id = res.user_id
+			OR (
+				u.id = r.owner_id
+				AND r.id = res.room_id
+			)
+	) / (
+		SELECT COUNT(1)
+		FROM Users
+	) * 100,
+	2
+) AS percent
+
+-- Задание 72
+-- Выведите среднюю цену бронирования за сутки для каждой из комнат, которую бронировали хотя бы один раз. Среднюю цену необходимо округлить до целого значения вверх.
+
+SELECT room_id,
+	CEILING(SUM(res.price) / COUNT(1)) AS avg_price
+FROM Rooms r
+	JOIN Reservations res ON r.id = res.room_id
+GROUP BY room_id
