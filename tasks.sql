@@ -1,3 +1,24 @@
+-- Задание 1
+-- Вывести имена всех людей, которые есть в базе данных авиакомпаний
+
+select name FROM Passenger
+
+-- Задание 2
+-- Вывести названия всеx авиакомпаний
+
+select name FROM Company
+
+
+-- Задание 3
+-- Вывести все рейсы, совершенные из Москвы
+
+select * from Trip WHERE town_from = "Moscow"
+
+-- Задание 4
+-- Вывести имена людей, которые заканчиваются на "man"
+
+select name FROM Passenger where name LIKE '%man'
+
 -- Задание 5
 -- Вывести количество рейсов, совершенных на TU-134
 
@@ -592,3 +613,178 @@ SELECT room_id,
 FROM Rooms r
 	JOIN Reservations res ON r.id = res.room_id
 GROUP BY room_id
+
+-- Задание 73
+-- Выведите id тех комнат, которые арендовали нечетное количество раз
+
+SELECT room_id,
+	COUNT(1) AS COUNT
+FROM Rooms r
+	JOIN Reservations res ON r.id = res.room_id
+GROUP BY room_id
+HAVING COUNT(1) %2 = 1
+
+-- Задание 74
+-- Выведите идентификатор и признак наличия интернета в помещении. Если интернет в сдаваемом жилье присутствует, то выведите «YES», иначе «NO».
+
+SELECT id,
+	CASE
+		WHEN has_internet = 1 THEN "YES"
+		WHEN has_internet = 0 THEN "NO"
+	END AS has_internet
+FROM Rooms
+GROUP BY id
+
+-- Задание 75
+-- Выведите фамилию, имя и дату рождения студентов, кто был рожден в мае.
+
+SELECT last_name, first_name, birthday FROM Student
+WHERE MONTH(birthday) = 5
+
+-- Задание 76
+-- Вывести имена всех пользователей сервиса бронирования жилья, а также два признака: является ли пользователь собственником какого-либо жилья (is_owner) и является ли пользователь арендатором (is_tenant). В случае наличия у пользователя признака необходимо вывести в соответствующее поле 1, иначе 0.
+
+SELECT
+    u.name,
+    CASE WHEN r.owner_id IS NOT NULL THEN 1 ELSE 0 END AS is_owner,
+    CASE WHEN res.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_tenant
+FROM Users u
+LEFT JOIN (SELECT DISTINCT owner_id FROM Rooms) r ON u.id = r.owner_id
+LEFT JOIN (SELECT DISTINCT user_idFROM Reservations) res ON u.id = res.user_id
+ORDER BY u.name;
+
+-- Задание 77
+-- Создайте представление с именем "People", которое будет содержать список имен (first_name) и фамилий (last_name) всех студентов (Student) и преподавателей(Teacher)
+
+CREATE VIEW People AS 
+SELECT first_name, last_name from Student 
+UNION
+SELECT first_name, last_name from Teacher
+
+-- Задание 78
+-- Выведите всех пользователей с электронной почтой в «hotmail.com»
+
+select * from Users
+WHERE email LIKE '%@hotmail.com'
+
+-- Задание 79
+-- Выведите поля id, home_type, price у всего жилья из таблицы Rooms. Если комната имеет телевизор и интернет одновременно, то в качестве цены в поле price выведите цену, применив скидку 10%.
+
+SELECT id, home_type,
+	CASE
+		WHEN has_tv = 1 AND has_internet = 1 THEN price * 0.9
+		ELSE price
+	END AS price
+FROM Rooms
+
+-- Задание 80
+-- Создайте представление «Verified_Users» с полями id, name и email, которое будет показывает только тех пользователей, у которых подтвержден адрес электронной почты.
+
+CREATE VIEW Verified_Users AS 
+SELECT id, name, email from Users
+WHERE email_verified_at	IS NOT NULL
+
+-- Задание 93
+-- Какой средний возраст клиентов, купивших Smartwatch (использовать наименование товара product.name) в 2024 году?
+
+SELECT AVG(age) AS average_age
+FROM Customer
+WHERE customer_key IN (
+	SELECT DISTINCT customer_key
+	FROM Purchase
+	WHERE product_key = 6 AND YEAR(date) = 2024
+);
+
+-- Задание 94
+-- Вывести имена покупателей, каждый из которых приобрёл Laptop и Monitor (использовать наименование товара product.name) в марте 2024 года?
+
+SELECT c.name
+FROM Customer c
+JOIN Purchase p ON c.customer_key = p.customer_key
+JOIN Product pr ON p.product_key = pr.product_key
+WHERE pr.name IN ('Laptop', 'Monitor')
+  AND YEAR(p.date) = 2024
+  AND MONTH(p.date) = 3
+GROUP BY c.customer_key, c.name
+HAVING COUNT(DISTINCT pr.name) = 2; --Используем, чтобы выбрать только тех, кто купил оба этих товара
+
+-- Задание 97
+-- Посчитать количество работающих складов на текущую дату по каждому городу. Вывести только те города, у которых количество складов более 80. Данные на выходе - город, количество складов.
+
+SELECT city, COUNT(*) AS warehouse_count FROM warehouses
+WHERE date_close IS NULL
+GROUP BY city
+HAVING COUNT(*) > 80;
+
+-- Задание 99
+-- Посчитай доход с женской аудитории (доход = сумма(price * items)). Обратите внимание, что в таблице женская аудитория имеет поле user_gender «female» или «f».
+
+SELECT SUM(price * items) as income_from_female from Purchases
+WHERE user_gender IN ('female', 'f');
+
+-- Задание 101
+-- Выведи для каждого пользователя первое наименование, которое он заказал (первое по времени транзакции).
+
+
+SELECT t.user_id, t.item
+FROM Transactions t
+WHERE t.transaction_ts = (
+	SELECT MIN(t2.transaction_ts)
+	FROM Transactions t2
+	WHERE t2.user_id = t.user_id
+);
+
+-- или
+
+SELECT t1.user_id, t1.item
+FROM Transactions t1
+LEFT JOIN Transactions t2
+	ON t1.user_id = t2.user_id
+	AND t1.transaction_ts > t2.transaction_ts
+WHERE t2.user_id IS NULL;
+
+-- Задание 103
+-- Вывести список имён сотрудников, получающих большую заработную плату, чем у непосредственного руководителя.
+
+SELECT e.name
+FROM Employee e
+JOIN Employee c ON e.chief_id = c.id
+WHERE e.salary > c.salary;
+
+-- Задание 109
+-- Выведите название страны, где находится город «Salzburg»
+
+SELECT cou.name as country_name from Countries cou
+JOIN Regions r on cou.id = r.countryid
+JOIN Cities c on r.id = c.regionid
+WHERE c.name = 'Salzburg'
+
+-- Задание 111
+-- Посчитайте население каждого региона. В качестве результата выведите название региона и его численность населения.
+
+SELECT r.name AS region_name,
+  SUM(c.population) AS total_population
+FROM Cities c
+JOIN Regions r ON c.regionid = r.id
+GROUP BY r.name;
+
+-- Задание 114
+-- Напишите запрос, который выведет имена пилотов, которые в качестве второго пилота (second_pilot_id) в августе 2023 года летали в New York
+
+SELECT p.name
+FROM Pilots p
+	JOIN Flights f ON p.pilot_id = f.second_pilot_id
+WHERE f.destination = 'New York'
+	AND YEAR(f.flight_date) = 2023
+	AND MONTH(f.flight_date) = 8
+
+-- Задание 123
+-- Необходимо написать SQL-запрос, который покажет всех сотрудников, у кого в работе менее трех задач. Результат предоставить в виде: имя сотрудника, количество задач в работе.
+
+SELECT e.emp_name, COUNT(t.id) AS task_count FROM Employee e
+LEFT JOIN Tasks t ON e.id = t.assignee_id
+GROUP BY e.id, e.emp_name
+HAVING COUNT(t.id) < 3;
+
+
+
